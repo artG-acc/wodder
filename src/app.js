@@ -21,7 +21,22 @@ app.use(
     saveUninitialized: false,
   })
 );
+app.use(async (req, res, next) => {
+  try {
+    res.locals.currentUser = null;
 
+    if (req.session.userId) {
+      const user = await User.findById(req.session.userId);
+      res.locals.currentUser = user || null;
+    }
+
+    next();
+  } catch (error) {
+    console.error(error);
+    res.locals.currentUser = null;
+    next();
+  }
+});
 // view engine
 app.engine('ejs',ejsMate);
 app.set('view engine', 'ejs');
@@ -84,6 +99,44 @@ app.get('/dashboard', async (req, res) => {
   if (!user) return res.redirect('/signup');
 
   res.render('dashboard', { user });
+});
+
+app.get('/login',async (req,res)=>{
+  res.render('auth/login',{error:null})
+});
+
+
+app.post('/login',async (req,res) => {
+  try {
+    let{email, password} = req.body;
+
+    email = ( email || '').trim().toLowerCase();
+    password = password || '';
+    if (!email || !password) {
+      return res.status(400).render('auth/login', { error: 'Email and password are required.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).render('auth/login', { error: 'Invalid email or password.' });
+    }
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).render('auth/login', { error: 'Invalid email or password.' });
+    }
+    req.session.userId = user._id;
+    return res.redirect('/dashboard');
+  
+  } catch (error) {
+    console.error(error);
+    return res.status(500).render('auth/login', { error: 'Something went wrong. Please try again.' });
+  }
+});
+
+app.post('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
 });
 
 
