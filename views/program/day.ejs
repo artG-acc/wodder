@@ -1,0 +1,28 @@
+<h1>Day <%= result.dayNumber %></h1>
+
+<p>
+  Template: <strong><%= result.template.join(" + ") %></strong>
+</p>
+
+<% if (result.type === "off") { %>
+  <h2>Off Day ✅</h2>
+
+<% } else if (result.type === "missing") { %>
+  <h2>Missing WOD</h2>
+  <p><%= result.message %></p>
+  <p>Create a Mongo document with tagsOrdered exactly:</p>
+  <pre><%= JSON.stringify(result.template) %></pre>
+
+<% } else { %>
+  <h2>Workout</h2>
+
+  <% if (!result.wod.slots || result.wod.slots.length === 0) { %>
+    <p>This WOD exists but has no slots saved.</p>
+  <% } else { %>
+    <ol>
+      <% result.wod.slots.forEach(slot => { %>
+        <li><strong><%= slot.key %></strong> — <%= slot.movement %></li>
+      <% }) %>
+    </ol>
+  <% } %>
+<% } %>
